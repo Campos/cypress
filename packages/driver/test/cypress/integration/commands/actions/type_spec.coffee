@@ -1744,7 +1744,33 @@ describe "src/cy/commands/actions/type", ->
             expect(changed).to.eq 0
 
     describe "caret position", ->
-      it "leaves caret at the end of the input"
+      it "can move the caret left on contenteditable", -> 
+        cy.get('[contenteditable]:first').type('foo', {delay:300})
+        cy.window().then (win) ->
+        ##make sure caret is correct
+        ## type left left
+        ## make sure caret correct
+        ## text is fboo
+          expect(win.getSelection().rangeCount).to.eq(1)
+
+    ## fix input-mask issue
+
+      it "leaves caret at the end of the input", ->
+
+        cy.get(':text:first').scrollIntoView().then (el) ->
+          cy.wait(3000) 
+          cy.window().then (win) ->
+            range = win.getSelection().getRangeAt(0);
+            preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(el.get(0));
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            caretOffset = preCaretRange.toString().length;
+            expect(caretOffset).to.eq('asdf'.length)
+
+      it "leaves caret at the end of the [contenteditable]", ->
+        cy.get('[contenteditable]:first').type('asdf', {delay:300})
+        cy.window().then (win) ->
+          expect(win.getSelection().rangeCount).to.eq(1)
 
       it "always types at the end of the input"
 

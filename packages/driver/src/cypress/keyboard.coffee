@@ -273,7 +273,7 @@ $Keyboard = {
     ## if the value has changed since previously typing, we need to
     ## update the caret position if the value has changed
     if el.prevValue and @expectedValueDoesNotMatchCurrentValue(el.prevValue, rng)
-      @moveCaretToEnd(rng)
+      @moveCaretToEnd(el, options.window.document)
       el.prevValue = rng.all()
       bililiteRangeSelection = el.bililiteRangeSelection = rng.bounds()
 
@@ -358,10 +358,6 @@ $Keyboard = {
       if @expectedValueDoesNotMatchCurrentValue(options.prev, rng)
         options.onTypeChange()
 
-      ## after typing be sure to clear all ranges
-      if sel = options.window.getSelection()
-        sel.removeAllRanges()
-
       unless options.release is false
         @resetModifiers(el, options.window)
 
@@ -415,9 +411,13 @@ $Keyboard = {
   expectedValueDoesNotMatchCurrentValue: (expected, rng) ->
     expected isnt rng.all()
 
-  moveCaretToEnd: (rng) ->
-    len = rng.length()
-    rng.bounds [len, len]
+  moveCaretToEnd: (el, document) ->
+    sel = document.getSelection()
+    sel.removeAllRanges()
+    range = document.createRange()
+    range.setStart(el, el.childNodes.length)
+    range.setEnd(el, el.childNodes.length)
+    sel.addRange(range)
 
   simulateKey: (el, eventType, key, options) ->
     ## bail if we've said not to fire this specific event
@@ -510,7 +510,7 @@ $Keyboard = {
       ## then something has altered the value and we need to
       ## automatically shift the caret to the end like a real browser
       if @expectedValueDoesNotMatchCurrentValue(after, options.rng)
-        @moveCaretToEnd(options.rng)
+        @moveCaretToEnd(el, options.window.document)
 
     @ensureKey el, key, options, ->
       options.updateValue(options.rng, key)
@@ -518,6 +518,7 @@ $Keyboard = {
       ## and store the value for comparison in any future typing
       el.bililiteRangeSelection = options.rng.bounds()
       el.prevValue = el.value
+      @moveCaretToEnd(el, options.window.document)
 
   ensureKey: (el, key, options, fn) ->
     options.id        = _.uniqueId("char")
@@ -533,7 +534,7 @@ $Keyboard = {
     if @simulateKey(el, "keydown", key, options)
       if @simulateKey(el, "keypress", key, options)
         if @simulateKey(el, "textInput", key, options)
-
+        
           ml = el.maxLength
 
           ## maxlength is -1 by default when omitted
